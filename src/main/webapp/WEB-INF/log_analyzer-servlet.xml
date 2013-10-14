@@ -26,17 +26,21 @@
 		<property name="idleConnectionTestPeriod" value="120" />
 		<property name="checkoutTimeout" value="5000" />
 	</bean>
+	
 	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
 		<property name="dataSource">
 			<ref bean="dataSource" />
 		</property>
 	</bean>
+	
 	<mvc:interceptors>
     	<mvc:interceptor>
-    	    <mvc:mapping path="/*"/>
-    	    <!-- <mvc:mapping path="/websdk/view_*"/> -->
-    	    <!-- <mvc:mapping path="/websdk/view_eventinfo"/> -->
+    	    <mvc:mapping path="/api/*"/>
     	    <bean class="com.scrat.loganalyzer.security.LoginInterceptor" />
+    	</mvc:interceptor>
+    	<mvc:interceptor>
+    		<mvc:mapping path="/api/admin/*"/>
+    		<bean class="com.scrat.loganalyzer.security.AdminInterceptor"></bean>
     	</mvc:interceptor>
     </mvc:interceptors>
 </beans>
