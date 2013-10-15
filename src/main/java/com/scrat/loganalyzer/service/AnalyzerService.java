@@ -26,4 +26,5 @@ public class AnalyzerService {
 			return false;
 		}
 	}
+	
 }
