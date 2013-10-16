@@ -14,3 +14,22 @@ INDEX(username),
 PRIMARY KEY(id),
 UNIQUE KEY(username)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT '用户帐号表';
+
+#DROP TABLE IF EXISTS geoip_country;
+CREATE TABLE geoip_country(
+id INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '自增主键',
+begin_ip VARCHAR(15) NOT NULL DEFAULT '' COMMENT '起始IP',
+end_ip VARCHAR(15) NOT NULL DEFAULT '' COMMENT '结束IP',
+begin_ip_sum INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '起始IP值',
+end_ip_sum INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '结束IP值',
+cn CHAR(2) NOT NULL DEFAULT '' COMMENT '国家简称',
+country VARCHAR(50) NOT NULL DEFAULT '' COMMENT '国家名称',
+PRIMARY KEY(id)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT 'GeoIPLateCity';
+
+load data local infile 'csv path' into table geoip_country 
+character set utf8 
+fields terminated by ',' 
+optionally enclosed by '"' 
+lines terminated by '\n' 
+(begin_ip,end_ip,begin_ip_sum,end_ip_sum,cn,country);
