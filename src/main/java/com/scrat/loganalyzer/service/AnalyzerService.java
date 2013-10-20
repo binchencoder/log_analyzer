@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -73,10 +74,30 @@ public class AnalyzerService {
 		return host;
 	}
 	
+	public static int ipv4ToInt(String ipv4Str){
+		int ipv4Integer = 0;
+		String[] ipParams = StringUtils.split(ipv4Str, "\\.");
+		if (ipParams.length != 4) {
+			return ipv4Integer;
+		}
+		ipv4Integer = Integer.valueOf(ipParams[0])*16777216 + Integer.valueOf(ipParams[1])*65536 + Integer.valueOf(ipParams[2])*256 + Integer.valueOf(ipParams[3]);
+		return ipv4Integer;
+	}
+	
+	public static String intToIpv4(int ipv4Int) {
+		String[] array = new String[4];
+		array[0] = String.valueOf(( ipv4Int/16777216 ) % 256);
+		array[1] = String.valueOf(( ipv4Int/65536     ) % 256);
+		array[2] = String.valueOf(( ipv4Int/256 ) % 256);
+		array[3] = String.valueOf(( ipv4Int ) % 256);
+		String ipv4Str = StringUtils.join(array, ",");
+		return ipv4Str;
+	}
+	
 	public static void test() throws ParseException {
 //		2007-05-31 18:19:33 216.104.143.32 GET /some-page/ 200 35384 1 "http://www.example.com/nice_page.htm" "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; FunWebProducts; .NET CLR 1.1.4322; .NET CLR 2.0.50727)" "-"
 //		LogFormat = "%time2 %host %method %url %code %bytesd %other %refererquot %uaquot %otherquot"
-		String log = "other 192.168.1.169 [03/May/2013:12:12:12 +0800] 2007-05-31 18:19:33 other";
+		String log = "other 174.36.207.186 [03/May/2013:12:12:12 +0800] 2007-05-31 18:19:33 other";
 		String logFormat = "%other %ip [%time1] %time2 %other";
 		Matcher matcher = Pattern.compile("(%[\\w\\d]+)").matcher(logFormat);
 		while (matcher.find()) {
@@ -102,7 +123,9 @@ public class AnalyzerService {
 					ip = log.substring(0, ipLength);
 					log = log.substring(ipLength);
 				}
-				System.out.println("ip="+ip);
+				int ipSum = ipv4ToInt(ip);
+				System.out.println("ip="+ip+" sum="+ipSum);
+				System.out.println(ipv4ToInt("2921648058"));
 				break;
 			case TIME1:
 				Date date1 = parseTime1(log.substring(0, 26));
