@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.scrat.loganalyzer.dao.UserDao;
+import com.scrat.loganalyzer.model.LogData;
 import com.scrat.loganalyzer.model.User;
 @Service
 public class AnalyzerService {
@@ -40,7 +41,9 @@ public class AnalyzerService {
 	private static final int OTHER = -1;
 	private static final int IP = 0;
 	private static final int TIME1=1;
+	private static final int NGINX_TIME_LENGTH =26;
 	private static final int TIME2 = 2;
+	private static final int METHOD = 3;
 	
 	private static final HashMap<String, Integer> PARSE_PARAM = new HashMap<String, Integer>();
 	static {
@@ -48,6 +51,7 @@ public class AnalyzerService {
 		PARSE_PARAM.put("%ip", IP);
 		PARSE_PARAM.put("%time1", TIME1);
 		PARSE_PARAM.put("%time2", TIME2);
+		PARSE_PARAM.put("%method", METHOD);
 	}
 	
 	private static ThreadLocal<DateFormat> time1Thread = new ThreadLocal<DateFormat>() {
@@ -74,32 +78,33 @@ public class AnalyzerService {
 		return host;
 	}
 	
-	public static int ipv4ToInt(String ipv4Str){
-		int ipv4Integer = 0;
+	public static long ipv4ToNum(String ipv4Str){
+		long ipv4Integer = 0;
 		String[] ipParams = StringUtils.split(ipv4Str, "\\.");
 		if (ipParams.length != 4) {
 			return ipv4Integer;
 		}
-		ipv4Integer = Integer.valueOf(ipParams[0])*16777216 + Integer.valueOf(ipParams[1])*65536 + Integer.valueOf(ipParams[2])*256 + Integer.valueOf(ipParams[3]);
+		ipv4Integer = Long.valueOf(ipParams[0])*16777216 + Long.valueOf(ipParams[1])*65536 + Long.valueOf(ipParams[2])*256 + Long.valueOf(ipParams[3]);
 		return ipv4Integer;
 	}
 	
-	public static String intToIpv4(int ipv4Int) {
+	public static String numToIPV4(long ipv4Num) {
 		String[] array = new String[4];
-		array[0] = String.valueOf(( ipv4Int/16777216 ) % 256);
-		array[1] = String.valueOf(( ipv4Int/65536     ) % 256);
-		array[2] = String.valueOf(( ipv4Int/256 ) % 256);
-		array[3] = String.valueOf(( ipv4Int ) % 256);
-		String ipv4Str = StringUtils.join(array, ",");
+		array[0] = String.valueOf(( ipv4Num/16777216 ) % 256);
+		array[1] = String.valueOf(( ipv4Num/65536     ) % 256);
+		array[2] = String.valueOf(( ipv4Num/256 ) % 256);
+		array[3] = String.valueOf(( ipv4Num ) % 256);
+		String ipv4Str = StringUtils.join(array, ".");
 		return ipv4Str;
 	}
 	
 	public static void test() throws ParseException {
 //		2007-05-31 18:19:33 216.104.143.32 GET /some-page/ 200 35384 1 "http://www.example.com/nice_page.htm" "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; FunWebProducts; .NET CLR 1.1.4322; .NET CLR 2.0.50727)" "-"
 //		LogFormat = "%time2 %host %method %url %code %bytesd %other %refererquot %uaquot %otherquot"
-		String log = "other 174.36.207.186 [03/May/2013:12:12:12 +0800] 2007-05-31 18:19:33 other";
-		String logFormat = "%other %ip [%time1] %time2 %other";
+		String log = "other \"POST";
+		String logFormat = "%other \"%method";
 		Matcher matcher = Pattern.compile("(%[\\w\\d]+)").matcher(logFormat);
+		LogData logData = new LogData();
 		while (matcher.find()) {
 			String param = matcher.group();
 			int paramIndex = logFormat.indexOf(param);
@@ -123,18 +128,18 @@ public class AnalyzerService {
 					ip = log.substring(0, ipLength);
 					log = log.substring(ipLength);
 				}
-				int ipSum = ipv4ToInt(ip);
-				System.out.println("ip="+ip+" sum="+ipSum);
-				System.out.println(ipv4ToInt("2921648058"));
+				long ipSum = ipv4ToNum(ip);
+				logData.setIp(ip);
+				logData.setIpSum(ipSum);
 				break;
 			case TIME1:
-				Date date1 = parseTime1(log.substring(0, 26));
-				System.out.println("date1="+date1);
-				log = log.substring(26);
+				Date time1 = parseTime1(log.substring(0, NGINX_TIME_LENGTH));
+				logData.setDate(time1);
+				log = log.substring(NGINX_TIME_LENGTH);
 				break;
 			case TIME2:
 				Date date = parseTime2(log.substring(0, 19));
-				System.out.println("date2="+date);
+				logData.setDate(date);
 				log = log.substring(19);
 				break;
 			default:
