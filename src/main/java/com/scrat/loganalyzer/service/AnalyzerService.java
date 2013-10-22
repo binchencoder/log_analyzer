@@ -41,10 +41,10 @@ public class AnalyzerService {
 	private static final int OTHER = -1;
 	private static final int IP = 0;
 	private static final int TIME1=1;
-	private static final int NGINX_TIME_LENGTH =26;
 	private static final int TIME2 = 2;
 	private static final int METHOD = 3;
-	
+	private static final int API = 4;
+	private static final int CODE = 5;
 	private static final HashMap<String, Integer> PARSE_PARAM = new HashMap<String, Integer>();
 	static {
 		PARSE_PARAM.put("%other", OTHER);
@@ -52,6 +52,8 @@ public class AnalyzerService {
 		PARSE_PARAM.put("%time1", TIME1);
 		PARSE_PARAM.put("%time2", TIME2);
 		PARSE_PARAM.put("%method", METHOD);
+		PARSE_PARAM.put("%api", API);
+		PARSE_PARAM.put("%code", CODE);
 	}
 	
 	private static ThreadLocal<DateFormat> time1Thread = new ThreadLocal<DateFormat>() {
@@ -60,24 +62,6 @@ public class AnalyzerService {
         }
     };
     
-    public static Date parseTime1(String timeStr) throws ParseException {
-    	DateFormat df = time1Thread.get();
-		Date result = df.parse(timeStr);
-		return result;
-	}
-	
-	public static Date parseTime2(String timeStr) throws ParseException{
-		Date result = DateUtils.parseDate(timeStr, "yyyy-MM-dd HH:mm:ss");
-		return result;
-	}
-	
-	public static String parseHost(String log, int startIndex) {
-		log = log.substring(startIndex);
-		int hostLength = log.indexOf(" ");
-		String host = log.substring(0, hostLength);
-		return host;
-	}
-	
 	public static long ipv4ToNum(String ipv4Str){
 		long ipv4Integer = 0;
 		String[] ipParams = StringUtils.split(ipv4Str, "\\.");
@@ -101,55 +85,69 @@ public class AnalyzerService {
 	public static void test() throws ParseException {
 //		2007-05-31 18:19:33 216.104.143.32 GET /some-page/ 200 35384 1 "http://www.example.com/nice_page.htm" "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; FunWebProducts; .NET CLR 1.1.4322; .NET CLR 2.0.50727)" "-"
 //		LogFormat = "%time2 %host %method %url %code %bytesd %other %refererquot %uaquot %otherquot"
-		String log = "other \"POST";
-		String logFormat = "%other \"%method";
+		String log = "127.0.0.1 1.0.0.0 - - [03/Jul/2013:00:00:10 +0800] \"GET /api?age%3D3&name%3Dscrat";
+		String logFormat = "%ip %ip - - [%time1] \"%method %api";
+		log = "127.0.0.1 - - [03/Jul/2013:00:00:10 +0800] \"POST /api.img?age%3D3&name%3Dscrat HTTP/1.1\"";
+		logFormat = "%ip %other - %time1 \"%method %api %other\"";
 		Matcher matcher = Pattern.compile("(%[\\w\\d]+)").matcher(logFormat);
 		LogData logData = new LogData();
 		while (matcher.find()) {
 			String param = matcher.group();
 			int paramIndex = logFormat.indexOf(param);
-			log = log.substring(paramIndex);
-			logFormat = logFormat.substring(paramIndex);
+			log = StringUtils.substring(log, paramIndex);
+			logFormat = StringUtils.substringAfter(logFormat, param);
+			String endChar = StringUtils.substring(logFormat, 0, 1);
 			if (PARSE_PARAM.get(param) == null){
 				// 没有找到时候的解析规则去解析日志
 				break;
 			}			
 			switch (PARSE_PARAM.get(param)) {
 			case OTHER:
-				int otherLength = log.indexOf(" ");
-				if (otherLength > -1) {
-					log = log.substring(otherLength);
-				}
+				String other = StringUtils.substringBefore(log, endChar);
+				log = StringUtils.substringAfter(log, other);
+				System.out.println(other);
 				break;
 			case IP:
-				int ipLength = log.indexOf(" ");
-				String ip = log;
-				if (ipLength > -1) {
-					ip = log.substring(0, ipLength);
-					log = log.substring(ipLength);
-				}
-				long ipSum = ipv4ToNum(ip);
+				String ip = StringUtils.substringBefore(log, endChar);
 				logData.setIp(ip);
+				long ipSum = ipv4ToNum(ip);
 				logData.setIpSum(ipSum);
+				log = StringUtils.substringAfter(log, ip);
 				break;
 			case TIME1:
-				Date time1 = parseTime1(log.substring(0, NGINX_TIME_LENGTH));
+				String time1Str = StringUtils.substringBetween(log, "[", "]");
+				DateFormat df = time1Thread.get();
+				Date time1 = df.parse(time1Str);
 				logData.setDate(time1);
-				log = log.substring(NGINX_TIME_LENGTH);
+				log = StringUtils.substringAfter(log, time1Str);
 				break;
 			case TIME2:
-				Date date = parseTime2(log.substring(0, 19));
-				logData.setDate(date);
-				log = log.substring(19);
+				String dateStr = StringUtils.substring(log, 0, 19);
+				Date time2 = DateUtils.parseDate(dateStr, "yyyy-MM-dd HH:mm:ss");
+				logData.setDate(time2);
+				log = StringUtils.substring(log, 19);
+				break;
+			case METHOD:
+				String method = StringUtils.substringBefore(log, endChar);
+				logData.setMethod(method);
+				log = StringUtils.substringAfter(log, method);
+				break;
+			case API:
+				String request = StringUtils.substringBefore(log, endChar);
+				String api = StringUtils.substringBefore(request, "?");
+				logData.setApi(api);
+				String fileType = StringUtils.substringAfter(api, ".");
+				logData.setFileType(fileType);
+				log = StringUtils.substringAfter(log, request);
+				break;
+			case CODE:
 				break;
 			default:
 				break;
 			}
-			logFormat = logFormat.substring(param.length());
 		}
+		System.out.println(logData);
 	}
-	
-	
 	
 	public static void main(String[] args) {
 		try {
