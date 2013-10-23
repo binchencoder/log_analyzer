@@ -33,3 +33,19 @@ fields terminated by ','
 optionally enclosed by '"' 
 lines terminated by '\n' 
 (begin_ip,end_ip,begin_ip_sum,end_ip_sum,cn,country);
+
+#DROP TABLE IF EXISTS log;
+CREATE TABLE log(
+ip VARCHAR(16) NOT NULL DEFAULT 'IP',
+ip_sum INT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'IP值',
+dt DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '请求世间',
+code INT NOT NULL DEFAULT 0 COMMENT '请求状态码',
+request_length FLOAT NOT NULL DEFAULT 0 COMMENT '请求时长',
+size INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '请求字节数',
+api VARCHAR(100) NOT NULL DEFAULT '' COMMENT '请求api',
+method VARCHAR(16) NOT NULL DEFAULT '' COMMENT '请求方法POST/GET',
+file_type VARCHAR(16) NOT NULL DEFAULT '' COMMENT '文件类型',
+os VARCHAR(16) NOT NULL DEFAULT '' COMMENT '操作系统'
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT '原始日志';
+
+insert ignore into log set ip='127.0.0.1',ip_sum=2130706433,dt='2013-12-12 12:12:12',code=200,request_length=60.001,size=4,api='/api',file_type='img',method='POST',os='Windows';
