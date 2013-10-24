@@ -3,14 +3,19 @@ package com.scrat.loganalyzer.service;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.commons.lang3.time.DateUtils;
 
 import com.scrat.loganalyzer.model.LogData;
@@ -145,11 +150,49 @@ public class ParseService {
 		return logData;
 	}
 	
+	private static final Map<Character, Integer> dateParamMap = new HashMap<Character, Integer>();
+	static{
+		dateParamMap.put('y', Calendar.YEAR);
+		dateParamMap.put('M', Calendar.MONTH);
+		dateParamMap.put('d', Calendar.DAY_OF_MONTH);
+	}
+	
+	private static String parsePath(String pathFormat) {
+		Pattern pattern = Pattern.compile("(?<=%\\{).*?(?=\\})");
+		Matcher matcher = pattern.matcher(pathFormat);
+		List<String> dataParams = new ArrayList<String>();
+		Calendar cal = Calendar.getInstance();
+		while (matcher.find()) {
+			String param = matcher.group();
+			dataParams.add(param);
+			String[] params = param.split(":");
+			int betweenDays = params.length < 2 ? 0 : NumberUtils.toInt(params[1]);
+			char paramType = params[0].charAt(0);
+			if (dateParamMap.get(paramType) != null) {
+				int paramTypeNum = dateParamMap.get(paramType);
+				cal.set(paramTypeNum, cal.get(paramTypeNum) + betweenDays);
+			}
+		}
+		for (String dateParam : dataParams) {
+			String[] params = StringUtils.split(dateParam, ':');
+			char paramType = params[0].charAt(0);
+			if (dateParamMap.get(paramType) != null) {
+				String pathDate = DateFormatUtils.format(cal, params[0]);
+				pathFormat = StringUtils.replaceOnce(pathFormat, dateParam, pathDate);
+			}
+		}
+		pathFormat = StringUtils.replaceChars(pathFormat, "%{|}", "");
+		return pathFormat;
+	}
+	
 	public static void main(String[] args) {
 		try {
 			String log = "127.0.0.1 - - [03/Jul/2013:00:00:10 +0800] \"POST /api.img?age%3D3&name%3Dscrat HTTP/1.1\" 200 21.003 4";
 			String logFormat = "%ip - - %time1 \"%method %api %other\" %code %requestlength %size";
 			parseOneLog(logFormat, log);
+			String pathFormat = "d:/tmp/%{yyyy:-1}/%{MM}/%{MM}/%{dd:-1}";
+			String path = parsePath(pathFormat);
+			System.out.println(path);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
