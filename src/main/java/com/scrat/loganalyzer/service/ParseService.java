@@ -1,10 +1,13 @@
 package com.scrat.loganalyzer.service;
 
+import java.io.File;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +16,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
@@ -185,6 +190,12 @@ public class ParseService {
 		return pathFormat;
 	}
 	
+	
+	public static void parse(String pathFormat, String logFormat) throws IOException {
+		String path = parsePath(pathFormat);
+		List<?> logs = FileUtils.readLines(new File(path));
+	}
+	
 	public static void main(String[] args) {
 		try {
 			String log = "127.0.0.1 - - [03/Jul/2013:00:00:10 +0800] \"POST /api.img?age%3D3&name%3Dscrat HTTP/1.1\" 200 21.003 4";
@@ -193,6 +204,15 @@ public class ParseService {
 			String pathFormat = "d:/tmp/%{yyyy:-1}/%{MM}/%{MM}/%{dd:-1}";
 			String path = parsePath(pathFormat);
 			System.out.println(path);
+			List<?> lines = FileUtils.readLines(new File("d:/autorun.inf"));
+			System.out.println(lines);
+			Collection<File> found =FileUtils.listFiles(new File("d:/tmp"), TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+			for (File file : found) {
+				System.out.println(file);
+			}
+//			for (String string : lines) {
+//				System.out.println(string);
+//			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
