@@ -22,10 +22,16 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.commons.lang3.time.DateUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+import com.scrat.loganalyzer.dao.LogDao;
 import com.scrat.loganalyzer.model.LogData;
-
+@Service
 public class ParseService {
+	@Autowired
+	private LogDao logDao;
+	
 	private static final int OTHER = -1;
 	private static final int IP = 0;
 	private static final int TIME1=1;
@@ -190,10 +196,23 @@ public class ParseService {
 		return pathFormat;
 	}
 	
-	
 	public static void parse(String pathFormat, String logFormat) throws IOException {
-		String path = parsePath(pathFormat);
-		List<?> logs = FileUtils.readLines(new File(path));
+		String directoryPath = parsePath(pathFormat);
+		File directory = new File(directoryPath);
+		if (directory.isDirectory()) {
+			Collection<?> paths =FileUtils.listFiles(directory, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+			for (Object logFile : paths) {
+				List<?> logs = FileUtils.readLines((File) logFile);
+				for (Object line : logs) {
+					System.out.println(line);
+				}
+			}
+		} else if (directory.isFile()) {
+			List<?> logs = FileUtils.readLines(directory);
+			for (Object line : logs) {
+				System.out.println(line);
+			}
+		}
 	}
 	
 	public static void main(String[] args) {
@@ -204,15 +223,7 @@ public class ParseService {
 			String pathFormat = "d:/tmp/%{yyyy:-1}/%{MM}/%{MM}/%{dd:-1}";
 			String path = parsePath(pathFormat);
 			System.out.println(path);
-			List<?> lines = FileUtils.readLines(new File("d:/autorun.inf"));
-			System.out.println(lines);
-			Collection<File> found =FileUtils.listFiles(new File("d:/tmp"), TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
-			for (File file : found) {
-				System.out.println(file);
-			}
-//			for (String string : lines) {
-//				System.out.println(string);
-//			}
+			parse(pathFormat, logFormat);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
