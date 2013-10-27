@@ -1,6 +1,7 @@
 package com.scrat.loganalyzer.service;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.StringUtils;
@@ -200,9 +202,13 @@ public class ParseService {
 		String directoryPath = parsePath(pathFormat);
 		File directory = new File(directoryPath);
 		if (directory.isDirectory()) {
-			Collection<?> paths =FileUtils.listFiles(directory, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
-			for (Object logFile : paths) {
-				List<?> logs = FileUtils.readLines((File) logFile);
+			Collection<?> paths = FileUtils.listFiles(directory, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+			for (Object logFileObj : paths) {
+				File logFile = (File) logFileObj;
+				FileInputStream fis = new FileInputStream(logFile);
+				String md5 = DigestUtils.md2Hex(fis);
+				fis.close();
+				List<?> logs = FileUtils.readLines(logFile);
 				for (Object line : logs) {
 					System.out.println(line);
 				}
@@ -224,6 +230,10 @@ public class ParseService {
 			String path = parsePath(pathFormat);
 			System.out.println(path);
 			parse(pathFormat, logFormat);
+			FileInputStream fis = new FileInputStream(new File("d:/wubi.exe"));
+			String md5 = DigestUtils.md5Hex(fis);
+			fis.close();
+			System.out.println(md5);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
