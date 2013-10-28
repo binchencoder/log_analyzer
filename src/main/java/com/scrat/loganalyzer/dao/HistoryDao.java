@@ -23,13 +23,28 @@ public class HistoryDao {
 			history.setStatus(rs.getString("status"));
 			history.setTotalLine(rs.getInt("total_line"));
 			history.setDt(rs.getTimestamp("dt"));
+			history.setSize(rs.getInt("size"));
 			return history;
 		}
 	};
 	
 	public History getHistory(String path) {
-		String sql = "select dt,md5_code,path,status,total_line from history where path=?";
+		String sql = "select dt,md5_code,path,status,total_line,size from history where path=?";
 		return jdbcTemplate.queryForObject(sql, new Object[]{path}, historyMapper);
 	}
 	
+	public void saveHistory(History history) {
+		String sql = "insert ignore into history set dt=?,md5_code=?,path=?,status=?,total_line=?,size=?";
+		jdbcTemplate.update(sql, history.getDt(),history.getMd5Code(),history.getPath(),history.getStatus(),history.getTotalLine(),history.getSize());
+	}
+	
+	public void updateHistory(History history) {
+		String sql = "update history set dt=?,md5_code=?,status=?,total_line=?,size=? where path=?";
+		jdbcTemplate.update(sql, history.getDt(),history.getMd5Code(),history.getStatus(),history.getTotalLine(),history.getSize(),history.getPath());
+	}
+	
+	public void deleteHistory(String path) {
+		String sql = "delete from history where path=?";
+		jdbcTemplate.update(sql, path);
+	}
 }

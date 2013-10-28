@@ -8,6 +8,21 @@ public class History {
 	private String md5Code;
 	private String status;
 	private Date dt;
+	private int size;
+
+	/**
+	 * @return the size
+	 */
+	public int getSize() {
+		return size;
+	}
+
+	/**
+	 * @param size the size to set
+	 */
+	public void setSize(int size) {
+		this.size = size;
+	}
 
 	/**
 	 * @return the path
